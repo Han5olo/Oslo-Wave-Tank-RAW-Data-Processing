@@ -20,7 +20,34 @@ import scipy.io.wavfile as wav
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 import matplotlib.pyplot as plt
+import sys
+import logging
+
+def init_logging():
+
+    # Initialize logger
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='logfile.log', encoding='utf-8', 
+                        level=logging.DEBUG, 
+                        format='%(asctime)s - %(name)s - %(levelname)s: %(message)s', 
+                        datefmt='%Y/%m/%d %I:%M:%S')
+
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(ch)
+
+    return logger
+
+logger = init_logging()
+logger.info("********Started processing audio files.*************")
 
 # %%
 
@@ -69,11 +96,11 @@ def generate_time_axis(start_time: datetime,
 # %%
 # Read CSV file with timestamps and durations
 file_path = Path.cwd() / 'csv'
+logging.info(f"Reading CSV files from directory: {file_path}")
 
 #read all csv files in directory
 csv_files = [f for f in file_path.glob('*.csv')]
-csv_files
-
+logging.info(f"Found {len(csv_files)} CSV files.")
 
 # %%
 # Read csv file and display head
@@ -82,6 +109,9 @@ for file in csv_files:
     df = pd.read_csv(file)
 
 df.head()
+
+
+
 
 # %%
 id = df['ID']
