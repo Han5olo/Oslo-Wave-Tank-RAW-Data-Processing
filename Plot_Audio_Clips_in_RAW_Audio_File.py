@@ -5,7 +5,7 @@
 clip_duration = 60   # seconds
 clip_delay = 30       # seconds after CSV time before clip starts
 
-custom_audio_path = '/home/dorian/Desktop/AudioMoth/files/2025-10-29_Oslo_Day1'
+custom_audio_path = '/home/dorian/DTUMaster/data/raw/2025-10_OsloWaveTank/AuralM3'
 custom_csv_path = '/home/dorian/Desktop/OsloCSV/rec'
 
 
@@ -135,8 +135,8 @@ def check_audio_bounds(d: np.ndarray) -> bool:
             """
         
             dtype = d.dtype
-            min_val = np.min(data)
-            max_val = np.max(data)
+            min_val = np.min(d)
+            max_val = np.max(d)
             
             bounds = {
                 'float32': (-1.0, 1.0),
@@ -184,13 +184,15 @@ duration_list = []
 #%%
 # Read CSV file with timestamps and durations
 
-if custom_csv_path:
-    csv_path = Path(custom_csv_path)
-    logger.info(f"Using custom CSV path: {csv_path}")
-else:
-    csv_path = Path.cwd() / 'csv'
-    logger.info(f"Using CSV path: {csv_path}")
 
+# Validate if custom paths are provided, else use defaults
+csv_path = Path(custom_csv_path or Path.cwd() / 'csv')
+logger.info(f"Using CSV path: {csv_path}")
+
+audio_path = Path(custom_audio_path or Path.cwd() / 'input')
+logger.info(f"Using audio path: {audio_path}")
+
+# Load all CSV files
 csv_files = [f for f in csv_path.glob('*.csv')]
 logger.info(f"Found {len(csv_files)} CSV files for processing.")
 
@@ -210,14 +212,7 @@ for csv_file in csv_files:
 
     # %%
     # Load all audio files
-    
-    if custom_audio_path: 
-        audio_path = Path(custom_audio_path)
-        logger.info(f"Using custom audio path: {audio_path}")
-    else:
-        audio_path = Path.cwd() / 'input'
-        logger.info(f"Using audio path: {audio_path}")
-
+       
     file_types = '*.WAV'  # the tuple of file types
     audio_files = sorted([f for f in audio_path.rglob(file_types)])
     logger.info(f"Found {len(audio_files)} {file_types} files for processing.")
@@ -254,6 +249,8 @@ for csv_file in csv_files:
         step = 1000 # plot every 100th sample, decreases plotting time and file size
         idx = np.arange(0, len(data), step)
         time_axis = pd.to_datetime(start_time) + rec_times_axis[idx].astype('timedelta64[ns]')
+
+        del rec_times_axis  # free memory
 
         # Determine audio start and end times
         audio_start = time_axis[0]
@@ -339,7 +336,24 @@ for csv_file in csv_files:
         plt.tight_layout()
         plt.savefig(f"output/{audio_file.stem}_Audio_Clip_Selection.png", 
                     dpi=72, bbox_inches='tight')
-        plt.close()
+        #plt.close()
+
+        # Clean up large variables to free memory
+        legend = ax.get_legend()
+        if legend:
+            legend.remove()
+
+
+
+
+        fig.clear()
+        
+        plt.close(fig)
+        plt.clf()
+        plt.close('all')
+
+        del data, time_axis, fig, ax
+        import gc; gc.collect()
 
 
 # %%
@@ -360,4 +374,3 @@ ax2.set_title("Duration of Audio Files")
 plt.tight_layout()
 plt.savefig("output/Audio_Files_Analysis.pdf", dpi=72)  
 plt.close()
-
