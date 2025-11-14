@@ -178,7 +178,7 @@ def calc_end_time(start_time: datetime, duration_ns: float) -> datetime:
     """
     duration = timedelta(microseconds=duration_ns / 1e3)  # convert ns to us
     end_time = start_time + duration
-    
+    logger.info(f"Calculated end time: {end_time}")
     return end_time 
 
 
@@ -195,6 +195,7 @@ def get_time_range_mask(date_time_UTC: pd.Series,
     pd.Series: Boolean mask indicating which timestamps are within the range.
     """
     mask = (date_time_UTC >= start_time) & (date_time_UTC <= end_time)
+    logger.info(f"Number of timestamps within range: {mask.sum()}")
     return mask
 
 def create_audio_clip(samplerate, data, rec_time, id, run, start_time, 
@@ -225,7 +226,9 @@ def create_audio_clip(samplerate, data, rec_time, id, run, start_time,
     output_filename = f"output/audio_clips/{id}_{run}_{rec_time.strftime('%Y%m%d_%H%M%S')}.wav"
     try:
         wav.write(output_filename, samplerate, segment)
-        logger.info(f"> Saved audio clip to {output_filename}")
+        logger.info(f">>> Saved audio clip to {output_filename}")
     except Exception as e:
-        logger.error(f"Failed to save audio clip {output_filename}: {e}")
+        logger.error(f">>> Failed to save audio clip {output_filename}: {e}")
+
+    return None
     
