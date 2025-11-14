@@ -1,11 +1,11 @@
 # %%
 # Parameters
-clip_duration = 60   # seconds
-clip_delay = 0       # seconds after CSV time before clip starts
+clip_duration = 10   # seconds
+clip_delay = 25       # seconds after CSV time before clip starts
 
 custom_audio_path = None
 custom_csv_path = '/home/dorian/Desktop/OsloCSV/rec'
-#custom_audio_path = '/home/dorian/DTUMaster/data/raw/2025-10_OsloWaveTank/AudioMoth'
+custom_audio_path = '/home/dorian/DTUMaster/data/raw/2025-10_OsloWaveTank/AudioMoth'
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,6 @@ logger = func.init_logging()
 csv_path = Path(custom_csv_path or Path.cwd() / 'csv')
 csv_files = sorted([f for f in csv_path.glob('*.csv')])
 
-
 for csv_file in csv_files:
     logger.info(f"Found CSV file: {csv_file}")
 
@@ -38,14 +37,12 @@ for csv_file in csv_files:
     date = df['Date']
     time_UTC = df['Time (ThinkPad DS) [UTC]']
 
-
-
     # Convert data and time to datetime object with format YYYY-MM-DD HH:MM:SS
     date_time_UTC = pd.to_datetime(date + ' ' + time_UTC, format='%Y-%m-%d %H:%M:%S')
 
     #%% Locate audio files
     audio_path = Path(custom_audio_path or Path.cwd() / 'input')
-    audio_files = sorted([f for f in audio_path.glob('*.WAV')])
+    audio_files = sorted([f for f in audio_path.rglob('*.WAV')])
     logger.info(f"Found {len(audio_files)} audio files in {audio_path}")
 
     for audio_file in audio_files:
@@ -80,7 +77,6 @@ for csv_file in csv_files:
             ids = df['ID'][mask]
             runs = df['Run'][mask]            
             rec_timestamps = date_time_UTC[mask]
-
 
             # Read audio file using scipy wav module
             samplerate, data = wav.read(audio_file)
