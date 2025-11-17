@@ -198,8 +198,8 @@ def get_time_range_mask(date_time_UTC: pd.Series,
     logger.info(f"Number of timestamps within range: {mask.sum()}")
     return mask
 
-def create_audio_clip(samplerate, data, rec_time, id, run, start_time, 
-                      clip_delay, clip_duration):
+def create_audio_clip(samplerate, data, rec_time, start_time, 
+                      clip_delay, clip_duration, *, fname:str = 'segment'):
     """Creates an audio clip from the raw audio data given the recording time and parameters.
     Parameters:
     samplerate (int): The sample rate of the audio data.
@@ -223,7 +223,7 @@ def create_audio_clip(samplerate, data, rec_time, id, run, start_time,
     end_sample = int(end * samplerate)
     segment = data[start_sample:end_sample]
 
-    output_filename = f"output/audio_clips/{id}_{run}_{rec_time.strftime('%Y%m%d_%H%M%S')}.wav"
+    output_filename = f"output/audio_clips/{fname}.WAV"
     try:
         wav.write(output_filename, samplerate, segment)
         logger.info(f">>> Saved audio clip to {output_filename}")
@@ -232,3 +232,20 @@ def create_audio_clip(samplerate, data, rec_time, id, run, start_time,
 
     return None
     
+
+def write_stats(total_files, processed_files, not_processed_files, total_clips, out_dir=Path('output')):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    total = int(total_files or 0)
+    processed = int(processed_files or 0)
+    pct = (processed / total * 100) if total else 0.0
+    stat_path = out_dir / 'stat.txt'
+    with stat_path.open('w', encoding='utf-8') as fh:
+        fh.write(f"Processed {processed} of {total} audio files ({pct:.2f}%).\n")
+        fh.write(f"Total number of audio clips created: {int(total_clips)}\n\n")
+        fh.write("Unprocessed files:\n")
+        if not not_processed_files:
+            fh.write("None\n")
+        else:
+            for p in not_processed_files:
+                fh.write(f"{p}\n")
+    logger.info(f"Wrote statistics to {stat_path}")
