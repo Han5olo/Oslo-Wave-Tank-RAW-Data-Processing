@@ -213,24 +213,27 @@ def create_audio_clip(samplerate, data, rec_time, start_time,
     Returns:
     None 
     """
-    
+
     start = (rec_time - start_time).total_seconds() + clip_delay
     end = start + clip_duration
 
-    logger.info(f"Creating clip {id}: {rec_time} -> {start:.1f}s to {end:.1f}s")
+    logger.info(f"Creating clip: {rec_time} -> {start:.1f}s to {end:.1f}s")
     
     start_sample = int(start * samplerate)
     end_sample = int(end * samplerate)
     segment = data[start_sample:end_sample]
+    
+    logger.info(f'{start_sample} : {end_sample}')
 
     output_filename = f"output/audio_clips/{fname}.WAV"
     try:
         wav.write(output_filename, samplerate, segment)
         logger.info(f">>> Saved audio clip to {output_filename}")
+
     except Exception as e:
         logger.error(f">>> Failed to save audio clip {output_filename}: {e}")
-
-    return None
+    
+    return [start_sample, end_sample]
     
 
 def write_stats(total_files, processed_files, not_processed_files, total_clips, out_dir=Path('output')):
@@ -249,3 +252,54 @@ def write_stats(total_files, processed_files, not_processed_files, total_clips, 
             for p in not_processed_files:
                 fh.write(f"{p}\n")
     logger.info(f"Wrote statistics to {stat_path}")
+
+
+
+def plot_downsample_data(x_dem, rts, y_dem, duration, *, 
+                         fname: str = 'sample_plot', ftype: str = 'jpg', 
+                         dpi: int = 72, rec_file: str = 'data', 
+                         show: bool = False, clips_span: list = None, 
+                         audio_clip_ids: list = None):
+    """ Plot downsampled data and save figure as file.
+    Parameters
+    ----------
+    x_dem : np.ndarray
+        Downsampled x data (time).
+    y_dem : np.ndarray
+        Downsampled y data (amplitude).
+    duration : float
+        Duration of the audio data in nanoseconds.
+    fname : str, optional
+        Filename to save the figure as (default is 'sample_plot').
+    ftype : str, optional
+        File type to save the figure as (default is 'jpg').
+    dpi : int, optional
+        Dots per inch for the saved figure (default is 72).
+    rec_file : str, optional
+        Name of the recorded file to display in the legend (default is 'data').
+    show : bool, optional
+        Whether to display the figure after saving (default is False).
+    Returns
+    -------
+    None
+    """
+    logger.info("Plotting downsampled data...")
+    plt.figure(figsize=(8, 4))   
+    plt.plot(x_dem, y_dem)
+        
+    if clips_span:
+        for span in audio_clip_ids:
+            plt.axvspan(rts[span[0]], rts[span[1]], alpha=0.2, color='orange')
+
+    plt.xlabel('Time [HH:MM:SS]')
+    plt.ylabel('Amplitude (RAW wav data)')
+
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    plt.tight_layout() # removes extra whitespace
+    plt.legend([rec_file], loc='best')
+    
+    logger.info(f"Saving figure as {fname}.{ftype} ...")
+    plt.savefig(f'output/figs/{fname}.{ftype}', dpi=dpi)
+    if show == True:
+        plt.show()
+    plt.close()
