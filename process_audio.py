@@ -32,22 +32,6 @@ num_clips_created = 0
 num_audio_files_processed = 0
 no_processed_files = list()
 
-def plot_downsample_data(ydem, duration, fname: str = 'sample_plot', *, ftype: str = 'jpg', dpi: int = 72):
-    """ PLot downsampled data and save figure as file.
-    inputs: ydem - downsampled data
-            duration - duration of the data
-    returns: None
-    """    
-    xdem = np.linspace(0, duration, len(ydem))
-    plt.figure(figsize=(8, 4))   
-    plt.plot(xdem, ydem)
-    #plt.axvspan(xdem[300000], xdem[800000], alpha=0.2, color='orange')
-    plt.tight_layout() # removes extra whitespace
-    plt.legend(['data'], loc='best')
-    plt.savefig(f'output/figs/{fname}.{ftype}', dpi=dpi)
-    plt.show()
-    plt.close()
-
 
 
 
@@ -74,8 +58,10 @@ for csv_file in csv_files:
     audio_files = sorted([f for f in audio_path.rglob('*.WAV')])
     logger.info(f"Found {len(audio_files)} audio files in {audio_path}")
 
+    # Process each audio file
     for audio_file in audio_files:
-
+        clips_span = list()
+        audio_clip_ids = list()
         logger.info(f"Processing audio file: {audio_file}")
         # Load Stat time from filename
         start_time = func.get_start_time_from_filename(audio_file)
@@ -121,16 +107,28 @@ for csv_file in csv_files:
                 fname = f"{id}_{run}_{rec_time.strftime('%Y%m%d_%H%M%S')}" 
 
                 logger.info(f"Processing clip for timestamp: {rec_time}, ID: {id}, Run: {run}")
-                #_ = func.create_audio_clip(samplerate, data, rec_time, start_time, clip_delay, clip_duration, fname=fname)
+                span = func.create_audio_clip(samplerate, data, rec_time, start_time, clip_delay, clip_duration, fname=fname)
+                clips_span.append(span)
                 
-                # HECK
-                logger.debug('Skip creteion of Audio clip')
-
                 num_clips_created += 1
 
+            # Plot downsampled data with recorded timestamps highlighted
+
+            logger.info("Downsampling audio data for plotting...")
+            q =100
+            data_dem = signal.decimate(data, q)
+            rts = np.linspace(0, duration, len(data)).astype('timedelta64[ns]') + pd.to_datetime(start_time)
+            rts_dem = rts[::q]
+
+            func.plot_downsample_data(rts_dem, rts, data_dem, duration, 
+                                        fname=audio_file.stem, rec_file=audio_file.stem, 
+                                        clips_span=clips_span, audio_clip_ids=audio_clip_ids)
 
             logger.info("Finished creating audio clips.")
-            #del data, rec_timestamps, ids, runs  # Free up memory
+
+            # Free up memory
+            del data, rec_timestamps, ids, runs, span, clips_span, audio_clip_ids  
+
             logger.info("------------------------------------------------------")
         else:
             no_processed_files.append(audio_file)
@@ -145,7 +143,5 @@ logger.info(f'Total number of audio clips created: {num_clips_created}')
 logger.info("All done!")
 logger.info("******************************************************")
 
-#%%
-q =100
-ydem = signal.decimate(data, q)
-plot_downsample_data(ydem, duration)
+
+
