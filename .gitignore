@@ -1,6 +1,6 @@
 
 # Custom Python.gitignore file
-
+output/**
 *.WAV
 *.wav
 *.png
